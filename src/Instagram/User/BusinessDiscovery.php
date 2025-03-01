@@ -83,6 +83,34 @@ class BusinessDiscovery extends User {
         Fields::THUMBNAIL_URL
     );
 
+  /**
+     * @var array $mediaFields a list of all the fields we are requesting to get back for each media object.
+     */
+    protected $storyFields = array(
+        Fields::ID,
+        Fields::MEDIA_TYPE,
+        Fields::MEDIA_URL,
+        Fields::THUMBNAIL_URL,
+        Fields::OWNER,
+        Fields::PERMALINK,
+        Fields::CAPTION,
+        Fields::LIKE_COUNT,
+        Fields::COMMENTS_COUNT,
+        Fields::TIMESTAMP
+    );
+    
+
+    protected $tagFields = array(
+        Fields::ID,
+        Fields::USERNAME,
+        Fields::CAPTION,
+        Fields::LIKE_COUNT,
+        Fields::COMMENTS_COUNT,
+        Fields::TIMESTAMP,
+        Fields::MEDIA_TYPE,
+        Fields::PERMALINK,
+        Fields::MEDIA_URL
+    );
     /**
      * Contructor for instantiating a new object.
      *
@@ -198,25 +226,30 @@ class BusinessDiscovery extends User {
      * @param array $params specific params for the request.
      * @return array of params for the request.
      */
-    public function getParams( $params = array() ) {
-        if ( $params ) { // specific params have been requested
+    public function getParams($params = array()) {
+        if ($params) {
             return $params;
-        } else { // get all params
-            // create our fields string for business discovery
+        } else {
             $fieldsString = Fields::BUSINESS_DISCOVERY . '.' . Fields::USERNAME . '(' . $this->username . '){' . 
-                Params::commaImplodeArray( $this->fields ) . ',' . 
+                Params::commaImplodeArray($this->fields) . ',' . 
                 Fields::MEDIA . '{' .
-                    Params::commaImplodeArray( $this->mediaFields ) . ',' . 
-                    Fields::CHILDREN . '{' .
-                        Fields::getDefaultMediaChildrenFields() .
-                    '}' .
+                    Params::commaImplodeArray($this->mediaFields) . ',' . 
+                    Fields::CHILDREN . '{' . 
+                        Fields::getDefaultMediaChildrenFields() . 
+                    '}' . 
+                '},' . 
+                Fields::STORIES . '{' .  
+                    Params::commaImplodeArray($this->storyFields) . 
+                '},' .
+                Fields::TAGS . '{' .  // <-- Include tags here
+                    Params::commaImplodeArray($this->tagFields) . 
                 '}' .
             '}';
 
-            // return our params
-            return Params::getFieldsParam( $fieldsString, false );
+            return Params::getFieldsParam($fieldsString, false);
         }
     }
+    
 }
 
 ?>

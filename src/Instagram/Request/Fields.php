@@ -82,6 +82,8 @@ class Fields {
 	const USERNAME = 'username';
 	const VIDEO_TITLE = 'video_title'; 
 	const WEBSITE = 'website';
+    const STORIES = 'stories';
+    const TAGS = 'tags';
 
 	/**
      * Return a list of all the fields we are requesting to get back for each comment.
