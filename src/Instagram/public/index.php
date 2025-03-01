@@ -2,18 +2,21 @@
 
 header("Content-Type: application/json");
 
+// Correct path to autoload.php
+require_once __DIR__ . '/../../../vendor/autoload.php';
+
+use Instagram\Controllers\UserController;
+use Instagram\Controllers\PostController;
+
 $request_uri = $_SERVER['REQUEST_URI'];
 
-// Load Controllers Based on Route
 switch ($request_uri) {
     case '/api/users':
-        require_once '../controllers/UserController.php';
         $controller = new UserController();
         $controller->getUsers();
         break;
 
     case '/api/posts':
-        require_once '../controllers/PostController.php';
         $controller = new PostController();
         $controller->getPosts();
         break;
