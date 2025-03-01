@@ -1,16 +1,25 @@
 <?php
-// public/index.php
 
-use Instagram\User\BusinessDiscovery;
+header("Content-Type: application/json");
 
-$config = array( // instantiation config params
-    'user_id' => '<IG_USER_ID>',
-    'username' => '<USERNAME>', // string of the Instagram account username to get data on
-    'access_token' => '<ACCESS_TOKEN>',
-);
+$request_uri = $_SERVER['REQUEST_URI'];
 
-// instantiate business discovery for a user
-$businessDiscovery = new BusinessDiscovery( $config );
+// Load Controllers Based on Route
+switch ($request_uri) {
+    case '/api/users':
+        require_once '../controllers/UserController.php';
+        $controller = new UserController();
+        $controller->getUsers();
+        break;
 
-// initial business discovery
-$userBusinessDiscovery = $businessDiscovery->getSelf();
+    case '/api/posts':
+        require_once '../controllers/PostController.php';
+        $controller = new PostController();
+        $controller->getPosts();
+        break;
+
+    default:
+        http_response_code(404);
+        echo json_encode(["message" => "Not Found"]);
+        break;
+}
