@@ -84,6 +84,8 @@ class Fields {
 	const WEBSITE = 'website';
     const STORIES = 'stories';
     const TAGS = 'tags';
+    const LIKES = 'likes';
+
 
 	/**
      * Return a list of all the fields we are requesting to get back for each comment.

@@ -65,6 +65,21 @@ class Metric {
     const TEXT_MESSAGE_CLICKS = 'text_message_clicks';
     const VIDEO_VIEWS = 'video_views';
     const WEBSITE_CLICKS = 'website_clicks';
+    const LIKES = 'likes';
+    const COMMENTS = 'comments';
+    const SHARES = 'shares';
+    // Newly added metrics from the Instagram Graph API error message
+    const PLAYS = 'plays';
+    const TOTAL_INTERACTIONS = 'total_interactions';
+    const FOLLOWS = 'follows';
+    const PROFILE_VISITS = 'profile_visits'; // Adding explicitly, even though PROFILE_VIEWS exists
+    const PROFILE_ACTIVITY = 'profile_activity';
+    const NAVIGATION = 'navigation';
+    const IG_REELS_VIDEO_VIEW_TOTAL_TIME = 'ig_reels_video_view_total_time';
+    const IG_REELS_AVG_WATCH_TIME = 'ig_reels_avg_watch_time';
+    const CLIPS_REPLAYS_COUNT = 'clips_replays_count';
+    const IG_REELS_AGGREGATED_ALL_PLAYS_COUNT = 'ig_reels_aggregated_all_plays_count';
+    const VIEWS = 'views';
 }
 
 ?>

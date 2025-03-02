@@ -56,34 +56,57 @@ class Insights extends Media {
     /**
      * @var array $metric a list of all the metrics we are requesting to get back on a certain media type.
      */
-    protected $metrics = array(
-        Metric::MEDIA_TYPE_CAROUSEL_ALBUM => array(
-            Metric::IMPRESSIONS,
+
+
+     protected $metrics = array(
+        Metric::MEDIA_TYPE_IMAGE => array(
             Metric::REACH,
-            Metric::CAROUSEL_ALBUM_ENGAGEMENT,
-            Metric::CAROUSEL_ALBUM_IMPRESSIONS,
-            Metric::CAROUSEL_ALBUM_REACH,
-            Metric::CAROUSEL_ALBUM_SAVED,
-            Metric::CAROUSEL_ALBUM_VIDEO_VIEWS,
-            Metric::ENGAGEMENT,
-            Metric::VIDEO_VIEWS,
-            Metric::SAVED
+            Metric::SAVED,
+            Metric::LIKES,
+            Metric::COMMENTS,
+            Metric::SHARES,
+            Metric::PROFILE_VISITS,
+            Metric::PROFILE_ACTIVITY,
+            Metric::FOLLOWS,
+            Metric::TOTAL_INTERACTIONS,
+        ),
+        Metric::MEDIA_TYPE_CAROUSEL_ALBUM => array(
+            Metric::REACH,
+            Metric::SAVED,
+            Metric::LIKES,
+            Metric::COMMENTS,
+            Metric::SHARES,
+            Metric::PROFILE_VISITS,
+            Metric::PROFILE_ACTIVITY,
+            Metric::FOLLOWS,
+            Metric::TOTAL_INTERACTIONS,
+
+            
         ),
         Metric::MEDIA_TYPE_VIDEO => array(
-            Metric::IMPRESSIONS,
             Metric::REACH,
-            Metric::ENGAGEMENT,
-            Metric::VIDEO_VIEWS,
-            Metric::SAVED
+            Metric::SAVED,
+            Metric::LIKES,
+            Metric::COMMENTS,
+            Metric::SHARES,
+            Metric::IG_REELS_AVG_WATCH_TIME,
+            Metric::IG_REELS_VIDEO_VIEW_TOTAL_TIME,
+            Metric::TOTAL_INTERACTIONS,
         ),
         Metric::MEDIA_TYPE_STORY => array(
-            Metric::IMPRESSIONS,
             Metric::REACH,
-            Metric::EXITS,
             Metric::REPLIES,
+            Metric::EXITS,
             Metric::TAPS_FORWARD,
-            Metric::TAPS_BACK
-        )
+            Metric::TAPS_BACK,
+            Metric::PROFILE_VISITS,
+            Metric::PROFILE_ACTIVITY,
+            Metric::FOLLOWS,
+            Metric::NAVIGATION,
+            Metric::TOTAL_INTERACTIONS,
+
+
+            )
     );
 
     /**

@@ -44,7 +44,7 @@ class Instagram {
     /**
      * @const string Default Graph API version for requests.
      */
-    const DEFAULT_GRAPH_VERSION = 'v14.0';
+    const DEFAULT_GRAPH_VERSION = 'v22.0';
 
     /**
      * @var string $graphVersion the graph version we want to use.

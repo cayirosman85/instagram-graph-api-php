@@ -9,7 +9,7 @@ class UserController {
     public function getUsers() {
 
         error_log("Entered getUsers function"); 
-        
+
         // Enable CORS
         header("Access-Control-Allow-Origin: *");
         header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
@@ -33,6 +33,7 @@ class UserController {
         try {
             $businessDiscovery = new BusinessDiscovery($config);
             $userBusinessDiscovery = $businessDiscovery->getSelf();
+
 
             echo json_encode($userBusinessDiscovery);
         } catch (\Exception $e) {

@@ -1,57 +1,17 @@
 <?php
 
-/**
- * Copyright 2022 Justin Stolpe.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
 namespace Instagram\User;
 
-// other classes we need to use
 use Instagram\Instagram;
 use Instagram\Request\Params;
 use Instagram\Request\Fields;
 use Instagram\Request\Request;
 use Instagram\User\Media;
+use Instagram\Media\Insights;
 
-/**
- * Business Discovery
- *
- * Get info on the Instagram users business account such as info and posts.
- *     - Endpoint Format: GET /{ig-user-id}?fields=business_discovery.username({username})&access_token={access-token}
- *     - Facebook docs: https://developers.facebook.com/docs/instagram-api/reference/ig-user/business_discovery
- * 
- * @package     instagram-graph-api-php-sdk
- * @author      Justin Stolpe
- * @link        https://github.com/jstolpe/instagram-graph-api-php-sdk
- * @license     https://opensource.org/licenses/MIT
- * @version     1.0
- */
 class BusinessDiscovery extends User {
-    /**
-     * @var integer $username Instagram username to get info on.
-     */
     protected $username;
 
-    /**
-     * @var array $fields a list of all the fields we are requesting to get back for the business.
-     */
     protected $fields = array(
         Fields::USERNAME,
         Fields::WEBSITE,
@@ -65,9 +25,6 @@ class BusinessDiscovery extends User {
         Fields::MEDIA_COUNT
     );
 
-    /**
-     * @var array $mediaFields a list of all the fields we are requesting to get back for each media object.
-     */
     protected $mediaFields = array(
         Fields::ID,
         Fields::USERNAME,
@@ -80,12 +37,9 @@ class BusinessDiscovery extends User {
         Fields::OWNER,
         Fields::PERMALINK,
         Fields::MEDIA_URL,
-        Fields::THUMBNAIL_URL
+        Fields::THUMBNAIL_URL,
     );
 
-  /**
-     * @var array $mediaFields a list of all the fields we are requesting to get back for each media object.
-     */
     protected $storyFields = array(
         Fields::ID,
         Fields::MEDIA_TYPE,
@@ -98,7 +52,6 @@ class BusinessDiscovery extends User {
         Fields::COMMENTS_COUNT,
         Fields::TIMESTAMP
     );
-    
 
     protected $tagFields = array(
         Fields::ID,
@@ -111,145 +64,155 @@ class BusinessDiscovery extends User {
         Fields::PERMALINK,
         Fields::MEDIA_URL
     );
-    /**
-     * Contructor for instantiating a new object.
-     *
-     * @param array $config for the class.
-     * @return void
-     */
-    public function __construct( $config ) {
-        // call parent for setup
-        parent::__construct( $config );
-        
-        // set the username
+
+    public function __construct($config) {
+        parent::__construct($config);
         $this->username = $config['username'];
     }
 
-    /**
-     * Get the users account business discovery information and posts.
-     *
-     * @param array $params Params for the GET request.
-     * @return Instagram Response.
-     */
-    public function getSelf( $params = array() ) {
-        $getParams = array( // parameters for our endpoint
+    public function getSelf($params = array()) {
+        $getParams = array(
             'endpoint' => '/' . $this->userId,
-            'params' => $this->getParams( $params )
+            'params' => $this->getParams($params)
         );
 
-        // ig get request
-        $response = $this->get( $getParams );
+        $response = $this->get($getParams);
 
-        // calculate the next link for paging
-        $this->calcNextLink( $response );
+        if (isset($response['error'])) {
+            error_log("Error in getSelf: " . json_encode($response['error']));
+            return $response;
+        }
 
-        // set prev and next links
-        $this->setPrevNextLinks( $response );
+        if (isset($response['business_discovery']['media']['data'])) {
+            foreach ($response['business_discovery']['media']['data'] as &$media) {
+                $mediaId = $media['id'];
 
-        // return response
+                if (isset($media['comments_count']) && $media['comments_count'] > 0) {
+                    $comments = $this->fetchMediaComments($mediaId);
+                    if ($comments) {
+                        $media['comments'] = $comments;
+                    }
+                }
+
+                $insights = $this->fetchMediaInsights($mediaId, $media['media_type'] ?? 'UNKNOWN');
+                if ($insights) {
+                    $media['insights'] = $insights;
+                }
+            }
+            unset($media);
+        }
+
+        if (isset($response['business_discovery']['tags']['data'])) {
+            foreach ($response['business_discovery']['tags']['data'] as &$tag) {
+                $mediaId = $tag['id'];
+
+                if (isset($tag['comments_count']) && $tag['comments_count'] > 0) {
+                    $comments = $this->fetchMediaComments($mediaId);
+                    if ($comments) {
+                        $tag['comments'] = $comments;
+                    }
+                }
+
+                $insights = $this->fetchMediaInsights($mediaId, $tag['media_type'] ?? 'UNKNOWN');
+                if ($insights) {
+                    $tag['insights'] = $insights;
+                }
+            }
+            unset($tag);
+        }
+
+        $this->calcNextLink($response);
+        $this->setPrevNextLinks($response);
+
         return $response;
     }
 
-    /**
-     * Calculate next link based on the cursors.
-     *
-     * @param array $response Instagram api response.
-     * @return void
-     */
-    public function calcNextLink( &$response ) {
-        if ( isset( $response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING][Fields::CURSORS][Params::BEFORE] ) ) { // we have previous page
-            // get fields string
+    protected function fetchMediaComments($mediaId) {
+        $endpoint = "/$mediaId";
+        $params = [
+            'fields' => 'comments{id,text,username,like_count,timestamp}',
+            'access_token' => $this->accessToken
+        ];
+
+        $response = $this->get(['endpoint' => $endpoint, 'params' => $params]);
+        if (isset($response['error'])) {
+            error_log("Error fetching comments for media $mediaId: " . json_encode($response['error']));
+            return null;
+        }
+        return isset($response['comments']) ? $response['comments'] : null;
+    }
+
+    protected function fetchMediaInsights($mediaId, $mediaType) {
+        // Verify media exists and is accessible
+        $check = $this->get(['endpoint' => "/$mediaId", 'params' => ['fields' => 'id,media_type', 'access_token' => $this->accessToken]]);
+        if (isset($check['error'])) {
+            error_log("Media $mediaId not accessible: " . json_encode($check['error']));
+            return null;
+        }
+
+        $insightsObj = new Insights([
+            'media_id' => $mediaId,
+            'media_type' => $mediaType,
+            'access_token' => $this->accessToken,
+            'user_id' => $this->userId
+        ]);
+
+        $response = $insightsObj->getSelf();
+        if (isset($response['error'])) {
+            error_log("Error fetching insights for media $mediaId: " . json_encode($response['error']));
+            return null;
+        }
+        return isset($response['data']) ? $response['data'] : null;
+    }
+
+    public function calcNextLink(&$response) {
+        if (isset($response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING][Fields::CURSORS][Params::BEFORE])) {
             $fieldsString = $this->getParams();
-
-            // calculate after string with cursor
             $snippet = Fields::MEDIA . '.' . Params::BEFORE . '(' . $response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING][Fields::CURSORS][Params::BEFORE] . '){';
-            
-            // update old fields with cursor
-            $newFieldsParams = str_replace( Fields::MEDIA . '{', $snippet, $fieldsString );
-
-            // create our media endpoint
+            $newFieldsParams = str_replace(Fields::MEDIA . '{', $snippet, $fieldsString);
             $endpoint = '/' . $this->userId . '/';
-
-            // create our request
-            $request = new Request( Request::METHOD_GET, $endpoint, $newFieldsParams, $this->graphVersion, $this->accessToken );
-
-            // set paging next to the url for the next request
+            $request = new Request(Request::METHOD_GET, $endpoint, $newFieldsParams, $this->graphVersion, $this->accessToken);
             $response[Fields::PAGING][Params::PREVIOUS] = $request->getUrl();
         }
 
-        if ( isset( $response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING][Fields::CURSORS][Params::AFTER] ) ) { // we have another page
-            // get fields string
+        if (isset($response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING][Fields::CURSORS][Params::AFTER])) {
             $fieldsString = $this->getParams();
-
-            // calculate after string with cursor
             $snippet = Fields::MEDIA . '.' . Params::AFTER . '(' . $response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING][Fields::CURSORS][Params::AFTER] . '){';
-            
-            // update old fields with cursor
-            $newFieldsParams = str_replace( Fields::MEDIA . '{', $snippet, $fieldsString );
-
-            // create our media endpoint
+            $newFieldsParams = str_replace(Fields::MEDIA . '{', $snippet, $fieldsString);
             $endpoint = '/' . $this->userId . '/';
-
-            // create our request
-            $request = new Request( Request::METHOD_GET, $endpoint, $newFieldsParams, $this->graphVersion, $this->accessToken );
-
-            // set paging next to the url for the next request
+            $request = new Request(Request::METHOD_GET, $endpoint, $newFieldsParams, $this->graphVersion, $this->accessToken);
             $response[Fields::PAGING][Params::NEXT] = $request->getUrl();
         }
     }
 
-    /**
-     * Request previous or next page data.
-     *
-     * @param string $page specific page to request.
-     * @return array of previous or next page data..
-     */
-    public function getMediaPage( $page ) {
-        // get the page to use
+    public function getMediaPage($page) {
         $pageUrl = Params::NEXT == $page ? $this->pagingNextLink : $this->pagingPreviousLink;
-
-        // return the response from the request
-        $mediaPageRequest = $this->sendCustomRequest( $pageUrl );
-
-        // calculate the next link for paging
-        $this->calcNextLink( $mediaPageRequest );
-
-        // set prev and next links
-        $this->setPrevNextLinks( $mediaPageRequest );
-
+        $mediaPageRequest = $this->sendCustomRequest($pageUrl);
+        $this->calcNextLink($mediaPageRequest);
+        $this->setPrevNextLinks($mediaPageRequest);
         return $mediaPageRequest;
     }
 
-    /**
-     * Get params for the request.
-     *
-     * @param array $params specific params for the request.
-     * @return array of params for the request.
-     */
     public function getParams($params = array()) {
         if ($params) {
             return $params;
         } else {
-            $fieldsString = Fields::BUSINESS_DISCOVERY . '.' . Fields::USERNAME . '(' . $this->username . '){' . 
-                Params::commaImplodeArray($this->fields) . ',' . 
+            $fieldsString = Fields::BUSINESS_DISCOVERY . '.' . Fields::USERNAME . '(' . $this->username . '){' .
+                Params::commaImplodeArray($this->fields) . ',' .
                 Fields::MEDIA . '{' .
-                    Params::commaImplodeArray($this->mediaFields) . ',' . 
-                    Fields::CHILDREN . '{' . 
-                        Fields::getDefaultMediaChildrenFields() . 
-                    '}' . 
-                '},' . 
-                Fields::STORIES . '{' .  
-                    Params::commaImplodeArray($this->storyFields) . 
+                    Params::commaImplodeArray($this->mediaFields) . ',' .
+                    Fields::CHILDREN . '{' .
+                        Fields::getDefaultMediaChildrenFields() .
+                    '}' .
                 '},' .
-                Fields::TAGS . '{' .  // <-- Include tags here
-                    Params::commaImplodeArray($this->tagFields) . 
+                Fields::STORIES . '{' .
+                    Params::commaImplodeArray($this->storyFields) .
+                '},' .
+                Fields::TAGS . '{' .
+                    Params::commaImplodeArray($this->tagFields) .
                 '}' .
             '}';
-
             return Params::getFieldsParam($fieldsString, false);
         }
     }
-    
 }
-
-?>
