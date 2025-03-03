@@ -199,7 +199,7 @@ class BusinessDiscovery extends User {
         } else {
             $fieldsString = Fields::BUSINESS_DISCOVERY . '.' . Fields::USERNAME . '(' . $this->username . '){' .
                 Params::commaImplodeArray($this->fields) . ',' .
-                Fields::MEDIA . '{' .
+                Fields::MEDIA . '.limit(8){' . // Limit to 10 media items
                     Params::commaImplodeArray($this->mediaFields) . ',' .
                     Fields::CHILDREN . '{' .
                         Fields::getDefaultMediaChildrenFields() .

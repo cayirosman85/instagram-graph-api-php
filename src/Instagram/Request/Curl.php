@@ -39,34 +39,34 @@ class Curl {
      * @param Request $request
      * @return array The curl response.
      */
-    public function send( $request ) {
-        $options = array( // curl options for the connection
+    public function send($request) {
+        $options = array(
             CURLOPT_URL => $request->getUrl(),
-            CURLOPT_RETURNTRANSFER => true, // Return response as string
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_CUSTOMREQUEST => $request->getMethod(),
             CURLOPT_CAINFO => __DIR__ . '/certs/cacert.pem',
+            CURLOPT_TIMEOUT => 60, // Timeout after 10 seconds
+            CURLOPT_CONNECTTIMEOUT => 5, // Connection timeout
         );
-
-        if ( $request->getMethod() == Request::METHOD_POST ) { // need to add on post fields
+    
+        if ($request->getMethod() == Request::METHOD_POST) {
             $options[CURLOPT_POSTFIELDS] = $request->getUrlBody();
         }
-
-        // initialize curl
+    
         $this->curl = curl_init();
-
-        // set the options
-        curl_setopt_array( $this->curl, $options );
-
-        // send the request
-        $this->rawResponse = curl_exec( $this->curl );
-
-        // close curl connection
-        curl_close( $this->curl );
-
-        // return nice json decoded response
-        return json_decode( $this->rawResponse, true );
+        curl_setopt_array($this->curl, $options);
+        $this->rawResponse = curl_exec($this->curl);
+    
+        // Check for Curl errors
+        if ($this->rawResponse === false) {
+            $this->curlErrorCode = curl_errno($this->curl);
+            error_log("Curl error: " . curl_error($this->curl));
+        }
+    
+        curl_close($this->curl);
+        return json_decode($this->rawResponse, true);
     }
 }
 
