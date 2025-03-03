@@ -38,7 +38,8 @@ class UploadController {
         }
 
         // $publicUrl = "http://localhost:8000/uploads/" . $fileName;
-         $publicUrl = "https://letsenhance.io/static/73136da51c245e80edc6ccfe44888a99/1015f/MainBefore.jpg";
+        //  $publicUrl = "https://letsenhance.io/static/73136da51c245e80edc6ccfe44888a99/1015f/MainBefore.jpg";
+        $publicUrl= "https://www.youtube.com/watch?v=xdEdTFFw0VA";
 
         http_response_code(200);
         echo json_encode([
