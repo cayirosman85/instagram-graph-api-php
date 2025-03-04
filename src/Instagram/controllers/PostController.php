@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../../vendor/autoload.php';
 use Instagram\User\Media;
 use Instagram\User\MediaPublish;
 use Instagram\Container\Container;
+use Instagram\Comment\Comment;
 
 class PostController {
   
@@ -210,8 +211,7 @@ class PostController {
         }
     }
 
-     // New method to publish a story
-     public function publishStory() {
+    public function publishStory() {
         header("Access-Control-Allow-Origin: *");
         header("Access-Control-Allow-Methods: POST, OPTIONS");
         header("Access-Control-Allow-Headers: Content-Type");
@@ -332,6 +332,105 @@ class PostController {
                 'success' => false,
                 'error' => $e->getMessage()
             ]);
+        }
+    }
+
+    public function toggleCommentVisibility() {
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: POST, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type");
+        header("Content-Type: application/json; charset=UTF-8");
+
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        $userId = $data['user_id'] ?? '';
+        $commentId = $data['comment_id'] ?? '';
+        $accessToken = $data['access_token'] ?? '';
+        $hide = $data['hide'] ?? false;
+
+        if (!$userId || !$commentId || !$accessToken) {
+            http_response_code(400);
+            echo json_encode(["message" => "Missing required parameters"]);
+            return;
+        }
+
+        try {
+            // Configure the Comment object
+            $config = [
+                'user_id' => $userId,
+                'comment_id' => $commentId,
+                'access_token' => $accessToken,
+            ];
+
+            // Instantiate the Comment class
+            $comment = new Comment($config);
+
+            // Toggle visibility (true to hide, false to show)
+            $commentShowHide = $comment->setHide($hide);
+
+            if ($commentShowHide) {
+                error_log("Comment visibility toggled successfully: Comment ID = " . $commentId . ", Hidden = " . ($hide ? 'true' : 'false'));
+                echo json_encode(["success" => true]);
+            } else {
+                throw new \Exception("Failed to toggle comment visibility");
+            }
+        } catch (\Exception $e) {
+            error_log("Error toggling comment visibility: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Error toggling comment visibility: " . $e->getMessage()]);
+        }
+    }
+
+    public function deleteComment() {
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: POST, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type");
+        header("Content-Type: application/json; charset=UTF-8");
+
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        $userId = $data['user_id'] ?? '';
+        $commentId = $data['comment_id'] ?? '';
+        $accessToken = $data['access_token'] ?? '';
+
+        if (!$userId || !$commentId || !$accessToken) {
+            http_response_code(400);
+            echo json_encode(["message" => "Missing required parameters"]);
+            return;
+        }
+
+        try {
+            // Configure the Comment object
+            $config = [
+                'user_id' => $userId,
+                'comment_id' => $commentId,
+                'access_token' => $accessToken,
+            ];
+
+            // Instantiate the Comment class
+            $comment = new Comment($config);
+
+            // Delete the comment
+            $commentDeleted = $comment->remove();
+
+            if ($commentDeleted) {
+                error_log("Comment deleted successfully: Comment ID = " . $commentId);
+                echo json_encode(["success" => true]);
+            } else {
+                throw new \Exception("Failed to delete comment");
+            }
+        } catch (\Exception $e) {
+            error_log("Error deleting comment: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Error deleting comment: " . $e->getMessage()]);
         }
     }
 }

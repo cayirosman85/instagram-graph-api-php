@@ -85,6 +85,7 @@ class BusinessDiscovery extends User {
         Fields::ID,
         Fields::TEXT,
         Fields::USERNAME,
+        Fields::USER,
         Fields::LIKE_COUNT,
         Fields::TIMESTAMP
     );

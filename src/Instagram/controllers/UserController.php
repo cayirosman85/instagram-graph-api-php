@@ -22,6 +22,7 @@ class UserController {
             'username' => $_REQUEST['username'] ?? '',
             'access_token' => $_REQUEST['access_token'] ?? ''
         );
+        error_log("Entered getUsers function".json_encode($config)); 
 
         // Validate required parameters
         if (empty($config['user_id']) || empty($config['username']) || empty($config['access_token'])) {

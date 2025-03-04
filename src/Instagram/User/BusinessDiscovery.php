@@ -130,7 +130,7 @@ class BusinessDiscovery extends User {
     protected function fetchMediaComments($mediaId) {
         $endpoint = "/$mediaId";
         $params = [
-            'fields' => 'comments{id,text,username,like_count,timestamp}',
+            'fields' => 'comments{id,text,username,user,like_count,timestamp}',
             'access_token' => $this->accessToken
         ];
 
