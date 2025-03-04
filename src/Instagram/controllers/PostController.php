@@ -9,7 +9,7 @@ use Instagram\User\MediaPublish;
 use Instagram\Container\Container;
 use Instagram\Comment\Comment;
 use Instagram\Media\Comments;
-
+use Instagram\Comment\Replies;
 
 class PostController {
   
@@ -496,4 +496,66 @@ class PostController {
             ]);
         }
     }
+
+
+    public function createReply() {
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: POST, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type");
+        header("Content-Type: application/json; charset=UTF-8");
+    
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+    
+        $data = json_decode(file_get_contents("php://input"), true);
+        $userId = $data['user_id'] ?? '';
+        $commentId = $data['comment_id'] ?? '';
+        $accessToken = $data['access_token'] ?? '';
+        $replyText = $data['reply'] ?? '';
+    
+        if (!$userId || !$commentId || !$accessToken || !$replyText) {
+            http_response_code(400);
+            echo json_encode(["message" => "Missing required parameters"]);
+            return;
+        }
+    
+        try {
+            // Configure the Replies object
+            $config = [
+                'user_id' => $userId,
+                'comment_id' => $commentId,
+                'access_token' => $accessToken,
+            ];
+    
+            // Instantiate the Replies class
+            $replies = new Replies($config);
+    
+            // Create the reply
+            $response = $replies->create($replyText);
+    
+            // Check if the response contains the reply ID
+            if (isset($response['id'])) {
+                error_log("Reply created successfully: Comment ID = " . $commentId . ", Reply ID = " . $response['id']);
+                http_response_code(200);
+                echo json_encode([
+                    "success" => true,
+                    "reply_id" => $response['id'],
+                    "message" => "Reply posted successfully"
+                ]);
+            } else {
+                throw new \Exception("Failed to create reply: " . json_encode($response));
+            }
+        } catch (\Exception $e) {
+            error_log("Error creating reply: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "error" => "Error creating reply: " . $e->getMessage()
+            ]);
+        }
+    }
+
+
 }

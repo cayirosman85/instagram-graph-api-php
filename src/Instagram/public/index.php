@@ -33,6 +33,32 @@ switch ($request_uri) {
         }
         break;
 
+        case '/api/update-profile':
+            if ($request_method === 'GET' || $request_method === 'POST') {
+                $controller = new UserController();
+                $controller->updateProfile();
+
+            } else {
+                http_response_code(405);
+                echo json_encode(["message" => "Method Not Allowed"]);
+            }
+            break;
+    
+
+
+        
+        case '/api/create-reply':
+            if ($request_method === 'POST') {
+                $controller = new PostController();
+                $controller->createReply();
+            } else {
+                http_response_code(405);
+                echo json_encode(["message" => "Method Not Allowed"]);
+            }
+            break;
+
+
+
     case '/api/publish-post':
         if ($request_method === 'POST') {
             $controller = new PostController();

@@ -130,7 +130,7 @@ class BusinessDiscovery extends User {
     protected function fetchMediaComments($mediaId) {
         $endpoint = "/$mediaId";
         $params = [
-            'fields' => 'comments{id,text,username,user,like_count,timestamp}',
+            'fields' => 'comments{id,text,username,user,like_count,timestamp,replies{id,text,username,timestamp}}', // Added replies with subfields
             'access_token' => $this->accessToken
         ];
 
@@ -199,7 +199,7 @@ class BusinessDiscovery extends User {
         } else {
             $fieldsString = Fields::BUSINESS_DISCOVERY . '.' . Fields::USERNAME . '(' . $this->username . '){' .
                 Params::commaImplodeArray($this->fields) . ',' .
-                Fields::MEDIA . '.limit(8){' . // Limit to 10 media items
+                Fields::MEDIA . '.limit(8){' . // Limit to 8 media items
                     Params::commaImplodeArray($this->mediaFields) . ',' .
                     Fields::CHILDREN . '{' .
                         Fields::getDefaultMediaChildrenFields() .
