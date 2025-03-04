@@ -72,7 +72,15 @@ switch ($request_uri) {
             echo json_encode(["message" => "Method Not Allowed"]);
         }
         break;
-
+        case '/api/create-comment':
+            if ($request_method === 'POST') {
+                $controller = new PostController();
+                $controller->createComment();
+            } else {
+                http_response_code(405);
+                echo json_encode(["message" => "Method Not Allowed"]);
+            }
+            break;
     case '/api/delete-comment':
         if ($request_method === 'POST') {
             $controller = new PostController();
@@ -82,6 +90,7 @@ switch ($request_uri) {
             echo json_encode(["message" => "Method Not Allowed"]);
         }
         break;
+        
 
     default:
         http_response_code(404);

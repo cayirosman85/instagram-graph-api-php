@@ -3,10 +3,13 @@ namespace Instagram\Controllers;
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
+
 use Instagram\User\Media;
 use Instagram\User\MediaPublish;
 use Instagram\Container\Container;
 use Instagram\Comment\Comment;
+use Instagram\Media\Comments;
+
 
 class PostController {
   
@@ -431,6 +434,66 @@ class PostController {
             error_log("Error deleting comment: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(["message" => "Error deleting comment: " . $e->getMessage()]);
+        }
+    }
+
+
+    public function createComment() {
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: POST, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type");
+        header("Content-Type: application/json; charset=UTF-8");
+    
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+    
+        $data = json_decode(file_get_contents("php://input"), true);
+        $userId = $data['user_id'] ?? '';
+        $mediaId = $data['media_id'] ?? '';
+        $accessToken = $data['access_token'] ?? '';
+        $commentText = $data['comment'] ?? '';
+    
+        if (!$userId || !$mediaId || !$accessToken || !$commentText) {
+            http_response_code(400);
+            echo json_encode(["message" => "Missing required parameters"]);
+            return;
+        }
+    
+        try {
+            // Instantiate the core Instagram class with the access token
+            $instagram = new \Instagram\Instagram([
+                'access_token' => $accessToken,
+            ]);
+    
+            // Define the endpoint and parameters for creating a comment
+            $response = $instagram->post([
+                'endpoint' => "/{$mediaId}/comments",
+                'params' => [
+                    'message' => $commentText,
+                ],
+            ]);
+    
+            // Check if the response contains the comment ID
+            if (isset($response['id'])) {
+                error_log("Comment created successfully: Media ID = " . $mediaId . ", Comment ID = " . $response['id']);
+                http_response_code(200);
+                echo json_encode([
+                    "success" => true,
+                    "comment_id" => $response['id'],
+                    "message" => "Comment posted successfully"
+                ]);
+            } else {
+                throw new \Exception("Failed to create comment: " . json_encode($response));
+            }
+        } catch (\Exception $e) {
+            error_log("Error creating comment: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "error" => "Error creating comment: " . $e->getMessage()
+            ]);
         }
     }
 }
