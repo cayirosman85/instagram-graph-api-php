@@ -8,6 +8,7 @@ use Instagram\User\MediaPublish;
 use Instagram\Container\Container;
 
 class PostController {
+  
     public function publishPost() {
         header("Access-Control-Allow-Origin: *");
         header("Access-Control-Allow-Methods: POST, OPTIONS");
@@ -201,6 +202,131 @@ class PostController {
             ]);
         } catch (\Exception $e) {
             error_log("Exception caught: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+     // New method to publish a story
+     public function publishStory() {
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: POST, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type");
+        header("Content-Type: application/json; charset=UTF-8");
+
+        ini_set('max_execution_time', 300); // 5 minutes
+
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        error_log("Raw input received for story: " . json_encode($input));
+
+        $config = [
+            'user_id' => $input['user_id'] ?? '',
+            'access_token' => $input['access_token'] ?? ''
+        ];
+        error_log("Config prepared: " . json_encode($config));
+
+        $storyParams = [
+            'image_url' => $input['image_url'] ?? '',
+            'video_url' => $input['video_url'] ?? ''
+        ];
+        error_log("Story parameters: " . json_encode($storyParams));
+
+        if (empty($config['user_id']) || empty($config['access_token'])) {
+            http_response_code(400);
+            echo json_encode(["error" => "Missing required parameters: user_id and access_token are required"]);
+            return;
+        }
+
+        if (empty($storyParams['image_url']) && empty($storyParams['video_url'])) {
+            http_response_code(400);
+            echo json_encode(["error" => "Missing media parameters: image_url or video_url required"]);
+            return;
+        }
+
+        try {
+            $media = new Media($config);
+            error_log("Media object initialized for story");
+
+            $containerParams = [
+                'media_type' => 'STORIES' // Explicitly set media type to STORIES
+            ];
+
+            if ($storyParams['image_url']) {
+                $containerParams['image_url'] = $storyParams['image_url'];
+                error_log("Single image story prepared");
+            } elseif ($storyParams['video_url']) {
+                $containerParams['video_url'] = $storyParams['video_url'];
+                error_log("Single video story prepared");
+            }
+
+            error_log("Container parameters for story: " . json_encode($containerParams));
+
+            // Create the story container
+            $container = $media->create($containerParams);
+            $containerId = $container['id'] ?? null;
+            if (empty($containerId)) {
+                throw new \Exception("Failed to create story container: " . json_encode($container));
+            }
+            error_log("Story container created: " . $containerId);
+
+            // Check container status
+            $containerChecker = new Container([
+                'user_id' => $config['user_id'],
+                'access_token' => $config['access_token'],
+                'container_id' => $containerId
+            ]);
+            error_log("Checking story container status for ID: $containerId");
+
+            $status = 'IN_PROGRESS';
+            $maxAttempts = 60; // ~5 minutes
+            $attempt = 0;
+
+            while ($status !== 'FINISHED' && $attempt < $maxAttempts) {
+                $statusResponse = $containerChecker->getSelf();
+                $status = $statusResponse['status_code'] ?? 'IN_PROGRESS';
+                error_log("Story container status (attempt $attempt): " . $status);
+
+                if ($status === 'ERROR') {
+                    throw new \Exception("Story container processing failed: " . json_encode($statusResponse));
+                }
+
+                if ($status !== 'FINISHED') {
+                    sleep(5);
+                    $attempt++;
+                }
+            }
+
+            if ($status !== 'FINISHED') {
+                throw new \Exception("Story container not ready after 5 minutes");
+            }
+
+            // Publish the story
+            $mediaPublish = new MediaPublish($config);
+            error_log("Publishing story with container ID: $containerId");
+            $publishResponse = $mediaPublish->create($containerId);
+            $storyId = $publishResponse['id'] ?? null;
+
+            if (empty($storyId)) {
+                throw new \Exception("Failed to publish story: " . json_encode($publishResponse));
+            }
+
+            error_log("Story published successfully: Story ID = " . $storyId);
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'story_id' => $storyId,
+                'message' => 'Story published successfully'
+            ]);
+        } catch (\Exception $e) {
+            error_log("Exception caught in story publishing: " . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,

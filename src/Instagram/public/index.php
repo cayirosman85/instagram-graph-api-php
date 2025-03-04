@@ -46,7 +46,15 @@ switch ($request_uri) {
             echo json_encode(["message" => "Method Not Allowed"]);
         }
         break;
-
+        case '/api/publish-story':
+            if ($request_method === 'POST') {
+                $controller = new PostController();
+                $controller->publishStory();
+            } else {
+                http_response_code(405);
+                echo json_encode(["message" => "Method Not Allowed"]);
+            }
+            break;
     case '/api/upload':
         if ($request_method === 'POST') {
             $controller = new UploadController();
