@@ -3,13 +3,13 @@ namespace Instagram\Controllers;
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
-
 use Instagram\User\Media;
 use Instagram\User\MediaPublish;
 use Instagram\Container\Container;
 use Instagram\Comment\Comment;
 use Instagram\Media\Comments;
 use Instagram\Comment\Replies;
+use Instagram\Media\Insights;
 
 class PostController {
   
@@ -19,7 +19,6 @@ class PostController {
         header("Access-Control-Allow-Headers: Content-Type");
         header("Content-Type: application/json; charset=UTF-8");
 
-        // Increase PHP execution time limit to 300 seconds (5 minutes)
         ini_set('max_execution_time', 300);
 
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -98,7 +97,6 @@ class PostController {
                         throw new \Exception("Invalid child media format: $childUrl. Only JPG/JPEG or MP4/MOV allowed.");
                     }
 
-                    // Create child container
                     $childContainer = $media->create($childParams);
                     $childId = $childContainer['id'] ?? null;
                     if (empty($childId)) {
@@ -106,14 +104,13 @@ class PostController {
                     }
                     error_log("Child container created: " . $childId);
 
-                    // Check child container status before proceeding to the next child
                     $childContainerChecker = new Container([
                         'user_id' => $config['user_id'],
                         'access_token' => $config['access_token'],
                         'container_id' => $childId
                     ]);
                     $childStatus = 'IN_PROGRESS';
-                    $maxChildAttempts = 60; // ~5 minutes
+                    $maxChildAttempts = 60;
                     $childAttempt = 0;
 
                     while ($childStatus !== 'FINISHED' && $childAttempt < $maxChildAttempts) {
@@ -166,7 +163,7 @@ class PostController {
             error_log("Checking container status for ID: $containerId");
 
             $status = 'IN_PROGRESS';
-            $maxAttempts = 60; // ~5 minutes with 5-second intervals
+            $maxAttempts = 60;
             $attempt = 0;
 
             while ($status !== 'FINISHED' && $attempt < $maxAttempts) {
@@ -220,7 +217,7 @@ class PostController {
         header("Access-Control-Allow-Headers: Content-Type");
         header("Content-Type: application/json; charset=UTF-8");
 
-        ini_set('max_execution_time', 300); // 5 minutes
+        ini_set('max_execution_time', 300);
 
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             http_response_code(200);
@@ -259,7 +256,7 @@ class PostController {
             error_log("Media object initialized for story");
 
             $containerParams = [
-                'media_type' => 'STORIES' // Explicitly set media type to STORIES
+                'media_type' => 'STORIES'
             ];
 
             if ($storyParams['image_url']) {
@@ -272,7 +269,6 @@ class PostController {
 
             error_log("Container parameters for story: " . json_encode($containerParams));
 
-            // Create the story container
             $container = $media->create($containerParams);
             $containerId = $container['id'] ?? null;
             if (empty($containerId)) {
@@ -280,7 +276,6 @@ class PostController {
             }
             error_log("Story container created: " . $containerId);
 
-            // Check container status
             $containerChecker = new Container([
                 'user_id' => $config['user_id'],
                 'access_token' => $config['access_token'],
@@ -289,7 +284,7 @@ class PostController {
             error_log("Checking story container status for ID: $containerId");
 
             $status = 'IN_PROGRESS';
-            $maxAttempts = 60; // ~5 minutes
+            $maxAttempts = 60;
             $attempt = 0;
 
             while ($status !== 'FINISHED' && $attempt < $maxAttempts) {
@@ -311,7 +306,6 @@ class PostController {
                 throw new \Exception("Story container not ready after 5 minutes");
             }
 
-            // Publish the story
             $mediaPublish = new MediaPublish($config);
             error_log("Publishing story with container ID: $containerId");
             $publishResponse = $mediaPublish->create($containerId);
@@ -362,17 +356,13 @@ class PostController {
         }
 
         try {
-            // Configure the Comment object
             $config = [
                 'user_id' => $userId,
                 'comment_id' => $commentId,
                 'access_token' => $accessToken,
             ];
 
-            // Instantiate the Comment class
             $comment = new Comment($config);
-
-            // Toggle visibility (true to hide, false to show)
             $commentShowHide = $comment->setHide($hide);
 
             if ($commentShowHide) {
@@ -411,17 +401,13 @@ class PostController {
         }
 
         try {
-            // Configure the Comment object
             $config = [
                 'user_id' => $userId,
                 'comment_id' => $commentId,
                 'access_token' => $accessToken,
             ];
 
-            // Instantiate the Comment class
             $comment = new Comment($config);
-
-            // Delete the comment
             $commentDeleted = $comment->remove();
 
             if ($commentDeleted) {
@@ -437,45 +423,41 @@ class PostController {
         }
     }
 
-
     public function createComment() {
         header("Access-Control-Allow-Origin: *");
         header("Access-Control-Allow-Methods: POST, OPTIONS");
         header("Access-Control-Allow-Headers: Content-Type");
         header("Content-Type: application/json; charset=UTF-8");
-    
+
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             http_response_code(200);
             exit;
         }
-    
+
         $data = json_decode(file_get_contents("php://input"), true);
         $userId = $data['user_id'] ?? '';
         $mediaId = $data['media_id'] ?? '';
         $accessToken = $data['access_token'] ?? '';
         $commentText = $data['comment'] ?? '';
-    
+
         if (!$userId || !$mediaId || !$accessToken || !$commentText) {
             http_response_code(400);
             echo json_encode(["message" => "Missing required parameters"]);
             return;
         }
-    
+
         try {
-            // Instantiate the core Instagram class with the access token
             $instagram = new \Instagram\Instagram([
                 'access_token' => $accessToken,
             ]);
-    
-            // Define the endpoint and parameters for creating a comment
+
             $response = $instagram->post([
                 'endpoint' => "/{$mediaId}/comments",
                 'params' => [
                     'message' => $commentText,
                 ],
             ]);
-    
-            // Check if the response contains the comment ID
+
             if (isset($response['id'])) {
                 error_log("Comment created successfully: Media ID = " . $mediaId . ", Comment ID = " . $response['id']);
                 http_response_code(200);
@@ -497,45 +479,39 @@ class PostController {
         }
     }
 
-
     public function createReply() {
         header("Access-Control-Allow-Origin: *");
         header("Access-Control-Allow-Methods: POST, OPTIONS");
         header("Access-Control-Allow-Headers: Content-Type");
         header("Content-Type: application/json; charset=UTF-8");
-    
+
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             http_response_code(200);
             exit;
         }
-    
+
         $data = json_decode(file_get_contents("php://input"), true);
         $userId = $data['user_id'] ?? '';
         $commentId = $data['comment_id'] ?? '';
         $accessToken = $data['access_token'] ?? '';
         $replyText = $data['reply'] ?? '';
-    
+
         if (!$userId || !$commentId || !$accessToken || !$replyText) {
             http_response_code(400);
             echo json_encode(["message" => "Missing required parameters"]);
             return;
         }
-    
+
         try {
-            // Configure the Replies object
             $config = [
                 'user_id' => $userId,
                 'comment_id' => $commentId,
                 'access_token' => $accessToken,
             ];
-    
-            // Instantiate the Replies class
+
             $replies = new Replies($config);
-    
-            // Create the reply
             $response = $replies->create($replyText);
-    
-            // Check if the response contains the reply ID
+
             if (isset($response['id'])) {
                 error_log("Reply created successfully: Comment ID = " . $commentId . ", Reply ID = " . $response['id']);
                 http_response_code(200);
@@ -557,5 +533,81 @@ class PostController {
         }
     }
 
+    public function getStoryInsights() {
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: POST, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type");
+        header("Content-Type: application/json; charset=UTF-8");
 
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        $userId = $data['user_id'] ?? '';
+        $mediaId = $data['media_id'] ?? '';
+        $accessToken = $data['access_token'] ?? '';
+
+        if (!$userId || !$mediaId || !$accessToken) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "error" => "Missing required parameters"]);
+            return;
+        }
+
+        try {
+            $config = [
+                'user_id' => $userId,
+                'media_id' => $mediaId,
+                'media_type' => 'STORY',
+                'access_token' => $accessToken,
+            ];
+
+            $insights = new Insights($config);
+            $mediaInsights = $insights->getSelf();
+
+            error_log("Raw insights response for story ID $mediaId: " . json_encode($mediaInsights));
+
+            if (isset($mediaInsights['error'])) {
+                if ($mediaInsights['error']['code'] === 10 && strpos($mediaInsights['error']['message'], "Not enough viewers") !== false) {
+                    error_log("Story ID $mediaId has insufficient viewers for insights.");
+                    http_response_code(200);
+                    echo json_encode([
+                        'success' => true,
+                        'insights' => [],
+                        'message' => 'No insights available due to insufficient viewers'
+                    ]);
+                    return;
+                } else {
+                    throw new \Exception("API error: " . $mediaInsights['error']['message']);
+                }
+            }
+
+            if (empty($mediaInsights['data'])) {
+                error_log("No insights data returned for story ID: $mediaId, but no error present.");
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'insights' => [],
+                    'message' => 'No insights available for this story'
+                ]);
+                return;
+            }
+
+            error_log("Story insights fetched successfully for media ID: " . $mediaId);
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'insights' => $mediaInsights['data'],
+                'message' => 'Story insights retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            error_log("Error fetching story insights: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => "Error fetching story insights: " . $e->getMessage()
+            ]);
+        }
+    }
 }

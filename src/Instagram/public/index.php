@@ -33,10 +33,10 @@ switch ($request_uri) {
         }
         break;
 
-        case '/api/update-profile':
+        case '/api/story-insights':
             if ($request_method === 'GET' || $request_method === 'POST') {
-                $controller = new UserController();
-                $controller->updateProfile();
+                $controller = new PostController();
+                $controller->getStoryInsights();
 
             } else {
                 http_response_code(405);
@@ -44,6 +44,7 @@ switch ($request_uri) {
             }
             break;
     
+            
 
 
         

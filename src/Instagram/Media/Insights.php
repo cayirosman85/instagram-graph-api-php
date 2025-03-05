@@ -82,8 +82,6 @@ class Insights extends Media {
             Metric::FOLLOWS,
             Metric::NAVIGATION,
             Metric::TOTAL_INTERACTIONS,
-
-
             )
     );
 
