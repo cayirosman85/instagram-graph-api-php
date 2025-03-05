@@ -9,7 +9,7 @@ class UserController {
 
     public function getUsers() {
         error_log("Entered getUsers function");
-
+        ini_set('max_execution_time', 300);
         // Enable CORS
         header("Access-Control-Allow-Origin: *");
         header("Access-Control-Allow-Methods: GET, POST, OPTIONS");

@@ -10,9 +10,88 @@ use Instagram\Comment\Comment;
 use Instagram\Media\Comments;
 use Instagram\Comment\Replies;
 use Instagram\Media\Insights;
+use Instagram\User\UserPosts;
 
 class PostController {
   
+    public function getUserPosts() {
+
+        ini_set('max_execution_time', 300);
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: POST, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type");
+        header("Content-Type: application/json; charset=UTF-8");
+
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        $userId = $data['user_id'] ?? '';
+        $username = $data['username'] ?? ''; // The Instagram username to query
+        $accessToken = $data['access_token'] ?? '';
+        $limit = $data['limit'] ?? 25; // Default limit of 25 posts
+        $after = $data['after'] ?? ''; // For pagination
+
+        if (!$userId || !$username || !$accessToken) {
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "error" => "Missing required parameters: user_id, username, and access_token are required"
+            ]);
+            return;
+        }
+
+        try {
+            $config = [
+                'user_id' => $userId,
+                'username' => $username,
+                'access_token' => $accessToken
+            ];
+
+            $userPosts = new UserPosts($config);
+            
+            // Prepare params with optional limit and pagination
+            $params = [];
+            if ($limit) {
+                $params['limit'] = $limit;
+            }
+            if ($after) {
+                $params['after'] = $after;
+            }
+
+            $response = $userPosts->getSelf($params);
+
+          
+            if (isset($response['error'])) {
+                throw new \Exception("Failed to fetch user posts: " . json_encode($response['error']));
+            }
+
+            $mediaData = $response['business_discovery']['media']['data'] ?? [];
+            $paging = $response['paging'] ?? [];
+
+            error_log("User posts fetched successfully for username: " . $username);
+
+            error_log(" user posts: " . json_encode($mediaData));
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'posts' => $mediaData,
+                'paging' => $paging,
+                'message' => 'User posts retrieved successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("Error fetching user posts: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => "Error fetching user posts: " . $e->getMessage()
+            ]);
+        }
+    }
+
     public function publishPost() {
         header("Access-Control-Allow-Origin: *");
         header("Access-Control-Allow-Methods: POST, OPTIONS");
@@ -548,6 +627,9 @@ class PostController {
         $userId = $data['user_id'] ?? '';
         $mediaId = $data['media_id'] ?? '';
         $accessToken = $data['access_token'] ?? '';
+
+        error_log(" insights Data." . $userId . " " . $mediaId . " " . $accessToken);
+
 
         if (!$userId || !$mediaId || !$accessToken) {
             http_response_code(400);
