@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../../vendor/autoload.php';
 use Instagram\Controllers\UserController;
 use Instagram\Controllers\PostController;
 use Instagram\Controllers\UploadController;
+use Instagram\Controllers\HashtagController;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -23,65 +24,96 @@ error_log("Request URI: " . $request_uri);
 error_log("Request Method: " . $request_method);
 
 switch ($request_uri) {
-    case '/api/users':
+
+    case '/api/getTopMedia':
         if ($request_method === 'GET' || $request_method === 'POST') {
-            $controller = new UserController();
-            $controller->getUsers();
+            $controller = new HashtagController();
+            $controller->getTopMedia();
         } else {
             http_response_code(405);
             echo json_encode(["message" => "Method Not Allowed"]);
         }
         break;
 
-        case '/api/story-insights':
-            if ($request_method === 'GET' || $request_method === 'POST') {
-                $controller = new PostController();
-                $controller->getStoryInsights();
+    case '/api/searchHashtag':
+        if ($request_method === 'GET' || $request_method === 'POST') {
+            $controller = new HashtagController();
+            $controller->searchHashtag();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
 
-            } else {
-                http_response_code(405);
-                echo json_encode(["message" => "Method Not Allowed"]);
-            }
-            break;
-    
-            case '/api/get-media-insights':
-                if ($request_method === 'GET' || $request_method === 'POST') {
-                    $controller = new PostController();
-                    $controller->getMediaInsights();
-    
-                } else {
-                    http_response_code(405);
-                    echo json_encode(["message" => "Method Not Allowed"]);
-                }
-                break;
-        
+    case '/api/getRecentMedia':
+        if ($request_method === 'GET' || $request_method === 'POST') {
+            $controller = new HashtagController();
+            $controller->getRecentMedia();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
 
-        
-            case '/api/get-user-posts':
-                if ($request_method === 'GET' || $request_method === 'POST') {
-                    $controller = new PostController();
-                    $controller->getUserPosts();
-    
-                } else {
-                    http_response_code(405);
-                    echo json_encode(["message" => "Method Not Allowed"]);
-                }
-                break;
-        
-            
+    case '/api/get-profile':
+        if ($request_method === 'GET' || $request_method === 'POST') {
+            $controller = new UserController();
+            $controller->getProfile();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
 
-        
-        case '/api/create-reply':
-            if ($request_method === 'POST') {
-                $controller = new PostController();
-                $controller->createReply();
-            } else {
-                http_response_code(405);
-                echo json_encode(["message" => "Method Not Allowed"]);
-            }
-            break;
+    case '/api/stories':
+        if ($request_method === 'GET' || $request_method === 'POST') {
+            $controller = new PostController();
+            $controller->getStories();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
 
+    case '/api/story-insights':
+        if ($request_method === 'GET' || $request_method === 'POST') {
+            $controller = new PostController();
+            $controller->getStoryInsights();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
 
+    case '/api/get-media-insights':
+        if ($request_method === 'GET' || $request_method === 'POST') {
+            $controller = new PostController();
+            $controller->getMediaInsights();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case '/api/get-user-posts':
+        if ($request_method === 'GET' || $request_method === 'POST') {
+            $controller = new PostController();
+            $controller->getUserPosts();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case '/api/create-reply':
+        if ($request_method === 'POST') {
+            $controller = new PostController();
+            $controller->createReply();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
 
     case '/api/publish-post':
         if ($request_method === 'POST') {
@@ -122,15 +154,17 @@ switch ($request_uri) {
             echo json_encode(["message" => "Method Not Allowed"]);
         }
         break;
-        case '/api/create-comment':
-            if ($request_method === 'POST') {
-                $controller = new PostController();
-                $controller->createComment();
-            } else {
-                http_response_code(405);
-                echo json_encode(["message" => "Method Not Allowed"]);
-            }
-            break;
+
+    case '/api/create-comment':
+        if ($request_method === 'POST') {
+            $controller = new PostController();
+            $controller->createComment();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
     case '/api/delete-comment':
         if ($request_method === 'POST') {
             $controller = new PostController();
@@ -140,7 +174,6 @@ switch ($request_uri) {
             echo json_encode(["message" => "Method Not Allowed"]);
         }
         break;
-        
 
     default:
         http_response_code(404);

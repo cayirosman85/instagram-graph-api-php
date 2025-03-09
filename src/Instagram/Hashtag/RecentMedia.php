@@ -1,94 +1,48 @@
 <?php
-
-
 namespace Instagram\Hashtag;
 
-// other classes we need to use
 use Instagram\Instagram;
 use Instagram\Request\Params;
 use Instagram\Request\Fields;
 
-/**
- * Recent Media
- *
- * Get recent media for a hashtag.
- *     - Endpoint Format: GET /{ig-hashtag-id}/recent_media?user_id={user-id}&fields={fields}&access_token={access-token}
- *     - Facebook docs: https://developers.facebook.com/docs/instagram-api/reference/ig-hashtag/recent-media
- * 
- * @package     instagram-graph-api-php-sdk
- * @author      Justin Stolpe
- * @link        https://github.com/jstolpe/instagram-graph-api-php-sdk
- * @license     https://opensource.org/licenses/MIT
- * @version     1.0
- */
 class RecentMedia extends Hashtag {
-    /**
-     * @const Instagram endpoint for the request.
-     */
     const ENDPOINT = 'recent_media';
-
-    /**
-     * @var integer $userId Instagram user id making the api request.
-     */
     protected $userId;
 
-    /**
-     * Contructor for instantiating a new object.
-     *
-     * @param array $config for the class.
-     * @return void
-     */
     public function __construct( $config ) {
-        // call parent for setup
         parent::__construct( $config );
-
-        // store the user id
         $this->userId = $config['user_id'];
     }
 
-    /**
-     * Get info on a hashtag.
-     *
-     * @param array $params params for the GET request.
-     * @return Instagram response.
-     */
     public function getSelf( $params = array() ) {
-        $getParams = array( // parameters for our endpoint
+        $getParams = array(
             'endpoint' => '/' . $this->hashtagId . '/' . self::ENDPOINT,
             'params' => $this->getParams( $params )
         );
-
-        // ig get request
         $response = $this->get( $getParams );
-
-        // return response
         return $response;
     }
 
-    /**
-     * Get params for the request.
-     *
-     * @param array $params Specific params for the request.
-     * @return array of params for the request.
-     */
     public function getParams( $params = array() ) {
-        if ( $params ) { // specific params have been requested
+        if ( $params ) {
             return $params;
-        } else { // get all params
-            // get field params
-            $params[Params::FIELDS] = Fields::getDefaultMediaFields() . ',' .
-                Fields::CHILDREN . '{' .
-                    Fields::getDefaultMediaChildrenFields() .
-                '}'
-            ;
-
-            // add on the since query param farthest back it can be set is 24 hours
+        } else {
+            // Define supported fields explicitly, excluding unsupported ones like thumbnail_url
+            $fields = [
+                Fields::ID,
+                Fields::CAPTION,
+                Fields::COMMENTS_COUNT,
+                Fields::LIKE_COUNT,
+                Fields::MEDIA_TYPE,
+                Fields::MEDIA_URL,
+                Fields::PERMALINK,
+                Fields::TIMESTAMP,
+                Fields::CHILDREN . '{' . Fields::getDefaultMediaChildrenFields() . '}'
+            ];
+            $params[Params::FIELDS] = implode(',', $fields);
             $params[Params::USER_ID] = $this->userId;
-
-            // return our params
             return $params;
         }
     }
 }
-
 ?>

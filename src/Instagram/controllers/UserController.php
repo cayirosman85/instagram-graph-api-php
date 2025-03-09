@@ -7,7 +7,7 @@ use Instagram\User\BusinessDiscovery;
 
 class UserController {
 
-    public function getUsers() {
+    public function getProfile() {
         error_log("Entered getUsers function");
         ini_set('max_execution_time', 300);
         // Enable CORS

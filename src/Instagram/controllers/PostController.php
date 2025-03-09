@@ -10,6 +10,8 @@ use Instagram\Comment\Comment;
 use Instagram\Media\Comments;
 use Instagram\Comment\Replies;
 use Instagram\Media\Insights;
+use Instagram\User\Stories;
+
 use Instagram\User\UserPosts;
 
 class PostController {
@@ -55,7 +57,8 @@ class PostController {
     
         echo json_encode($result);
       }
-    public function publishPost() {
+  
+      public function publishPost() {
         header("Access-Control-Allow-Origin: *");
         header("Access-Control-Allow-Methods: POST, OPTIONS");
         header("Access-Control-Allow-Headers: Content-Type");
@@ -658,6 +661,73 @@ class PostController {
    
    
    
+    }
+
+    public function getStories() {
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: POST, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type");
+        header("Content-Type: application/json; charset=UTF-8");
+    
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+    
+        $data = json_decode(file_get_contents("php://input"), true);
+        $userId = $data['user_id'] ?? '';
+        $accessToken = $data['access_token'] ?? '';
+    
+        error_log("Stories request data: user_id = " . $userId . ", access_token = " . $accessToken);
+    
+        if (!$userId || !$accessToken) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "error" => "Missing required parameters: user_id and access_token are required"]);
+            return;
+        }
+    
+        try {
+            $config = [
+                'user_id' => $userId,
+                'access_token' => $accessToken,
+            ];
+    
+            $stories = new Stories($config);
+            $response = $stories->getSelf(); // Fetch the user's stories
+    
+            error_log("Raw stories response: " . json_encode($response));
+    
+            if (isset($response['error'])) {
+                throw new \Exception("API error: " . $response['error']['message']);
+            }
+    
+            $storiesData = $response['data'] ?? [];
+            if (empty($storiesData)) {
+                error_log("No stories available for user ID: " . $userId);
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'stories' => [],
+                    'message' => 'No stories available at this time'
+                ]);
+                return;
+            }
+    
+            error_log("Stories fetched successfully for user ID: " . $userId);
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'stories' => $storiesData,
+                'message' => 'Stories retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            error_log("Error fetching stories: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => "Error fetching stories: " . $e->getMessage()
+            ]);
+        }
     }
 
     public function getMediaInsights() {

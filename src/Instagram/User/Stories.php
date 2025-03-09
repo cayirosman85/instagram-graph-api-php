@@ -42,15 +42,16 @@ class Stories extends User {
      * @param array $params params for the GET request.
      * @return Instagram Response.
      */
-    public function getSelf( $params = array() ) {
-        $getParams = array( // parameters for our endpoint
-            'endpoint' => '/' . $this->userId . '/' . self::ENDPOINT
+
+    public function getSelf($params = array()) {
+        $getParams = array(
+            'endpoint' => '/' . $this->userId . '/' . self::ENDPOINT,
+            'params' => array(
+                'fields' => 'id,media_type,media_url,timestamp,permalink' // Add fields you need
+            )
         );
-
-        // ig get request
-        $response = $this->get( $getParams );
-
-        // return response
+    
+        $response = $this->get($getParams);
         return $response;
     }
 }
