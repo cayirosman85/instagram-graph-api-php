@@ -44,6 +44,19 @@ switch ($request_uri) {
             }
             break;
     
+            case '/api/get-media-insights':
+                if ($request_method === 'GET' || $request_method === 'POST') {
+                    $controller = new PostController();
+                    $controller->getMediaInsights();
+    
+                } else {
+                    http_response_code(405);
+                    echo json_encode(["message" => "Method Not Allowed"]);
+                }
+                break;
+        
+
+        
             case '/api/get-user-posts':
                 if ($request_method === 'GET' || $request_method === 'POST') {
                     $controller = new PostController();

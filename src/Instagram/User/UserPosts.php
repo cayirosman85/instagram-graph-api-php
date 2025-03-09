@@ -34,18 +34,20 @@ class UserPosts extends User {
             'endpoint' => '/' . $this->userId,
             'params' => $this->getParams($params)
         );
-
+    
         $response = $this->get($getParams);
-
+    
         if (isset($response['error'])) {
             error_log("Error in getSelf: " . json_encode($response['error']));
             return $response;
         }
-
+    
+        $fetchInsights = $params['fetch_insights'] ?? false; // New parameter to control insights fetching
+    
         if (isset($response['business_discovery']['media']['data'])) {
             foreach ($response['business_discovery']['media']['data'] as &$media) {
                 $mediaId = $media['id'];
-
+    
                 // Fetch comments if present
                 if (isset($media['comments_count']) && $media['comments_count'] > 0) {
                     $comments = $this->fetchMediaComments($mediaId);
@@ -53,14 +55,16 @@ class UserPosts extends User {
                         $media['comments'] = $comments;
                     }
                 }
-
-                // Fetch insights for the media
-                $insights = $this->fetchMediaInsights($mediaId, $media['media_type'] ?? 'UNKNOWN');
-                if ($insights) {
-                    $media['insights'] = $insights;
+    
+                // Fetch insights only if explicitly requested
+                if ($fetchInsights) {
+                    $insights = $this->fetchMediaInsights($mediaId, $media['media_type'] ?? 'UNKNOWN');
+                    if ($insights) {
+                        $media['insights'] = $insights;
+                    }
                 }
-
-                // Fetch children for CAROUSEL_ALBUM (optional, as discussed previously)
+    
+                // Fetch children for CAROUSEL_ALBUM
                 if ($media['media_type'] === 'CAROUSEL_ALBUM') {
                     $children = $this->fetchCarouselChildren($mediaId);
                     if ($children) {
@@ -70,10 +74,10 @@ class UserPosts extends User {
             }
             unset($media);
         }
-
+    
         $this->calcNextLink($response);
         $this->setPrevNextLinks($response);
-
+    
         return $response;
     }
 
@@ -130,17 +134,24 @@ class UserPosts extends User {
         return isset($response['children']) ? $response['children'] : null;
     }
 
+ 
     public function calcNextLink(&$response) {
         if (isset($response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING][Fields::CURSORS][Params::AFTER])) {
-            $fieldsString = $this->getParams();
-            $snippet = Fields::MEDIA . '.' . Params::AFTER . '(' . $response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING][Fields::CURSORS][Params::AFTER] . '){';
-            $newFieldsParams = str_replace(Fields::MEDIA . '{', $snippet, $fieldsString);
-            $endpoint = '/' . $this->userId . '/';
-            $request = new Request(Request::METHOD_GET, $endpoint, $newFieldsParams, $this->graphVersion, $this->accessToken);
-            $response[Fields::PAGING][Params::NEXT] = $request->getUrl();
+          $fieldsString = $this->getParams();
+          $snippet = Fields::MEDIA . '.' . Params::AFTER . '(' . $response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING][Fields::CURSORS][Params::AFTER] . '){';
+          $newFieldsParams = str_replace(Fields::MEDIA . '{', $snippet, $fieldsString);
+          $endpoint = '/' . $this->userId . '/';
+          $request = new Request(Request::METHOD_GET, $endpoint, $newFieldsParams, $this->graphVersion, $this->accessToken);
+          $response[Fields::PAGING][Params::NEXT] = $request->getUrl(); // Set next URL
         }
-    }
-
+      }
+    
+      public function setPrevNextLinks(&$response) {
+        // Ensure paging is fully preserved
+        if (isset($response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING])) {
+          $response[Fields::PAGING] = $response[Fields::BUSINESS_DISCOVERY][Fields::MEDIA][Fields::PAGING];
+        }
+      }
     public function getMediaPage($page) {
         $pageUrl = $this->pagingNextLink;
         $mediaPageRequest = $this->sendCustomRequest($pageUrl);
